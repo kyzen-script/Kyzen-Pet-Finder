@@ -1,20 +1,18 @@
--- File: PetFinder/ui.lua
+-- File: ui.lua (Đã Fix Lỗi Font Chữ)
 local UI = {}
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 -- ⚙️ CONFIG UI
-local IMAGE_ID = "rbxassetid://105468345186897" -- Sửa ID ảnh của ông ở đây!
-local BORDER_COLOR = Color3.fromRGB(255, 105, 180) -- Màu hồng (Hot Pink)
+local IMAGE_ID = "rbxassetid://105468345186897" -- Chỗ này lát ông thay ID ảnh của ông nhé
+local BORDER_COLOR = Color3.fromRGB(255, 105, 180) -- Hot Pink
 local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
 local BG_COLOR = Color3.fromRGB(20, 20, 20)
 
--- Khởi tạo biến lưu trữ
 UI.InventoryData = {}
 
 function UI.Init()
-    -- Xóa UI cũ nếu có (chống trùng lặp khi chạy lại)
     local oldUi = CoreGui:FindFirstChild("KyzenPetFinderUI")
     if oldUi then oldUi:Destroy() end
 
@@ -22,7 +20,6 @@ function UI.Init()
     screen.Name = "KyzenPetFinderUI"
     screen.Parent = (gethui and gethui()) or CoreGui
 
-    -- 🔲 KHUNG CHÍNH
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 300, 0, 400)
     mainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
@@ -39,16 +36,14 @@ function UI.Init()
     uiStroke.Thickness = 2
     uiStroke.Parent = mainFrame
 
-    -- 🖼️ ẢNH NỀN CHỦ ĐỀ
     local bgImage = Instance.new("ImageLabel")
     bgImage.Size = UDim2.new(1, 0, 1, 0)
     bgImage.BackgroundTransparency = 1
     bgImage.Image = IMAGE_ID
-    bgImage.ImageTransparency = 0.8 -- Làm mờ ảnh để không che mất chữ
+    bgImage.ImageTransparency = 0.8
     bgImage.Parent = mainFrame
     bgImage.ZIndex = 0
 
-    -- Chức năng Kéo Thả (Draggable)
     local dragging, dragInput, dragStart, startPos
     mainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -74,7 +69,6 @@ function UI.Init()
         end
     end)
 
-    -- HÀM TẠO CHỮ NHANH
     local function createText(name, text, pos, size, font, align, parent)
         local lbl = Instance.new("TextLabel")
         lbl.Name = name
@@ -90,7 +84,6 @@ function UI.Init()
         return lbl
     end
 
-    -- HÀM TẠO DÒNG KẺ (DIVIDER)
     local function createDivider(pos)
         local div = Instance.new("Frame")
         div.Size = UDim2.new(1, 0, 0, 1)
@@ -105,14 +98,14 @@ function UI.Init()
     createText("Title", "🐾 Kyzen Pet Finder Premium", UDim2.new(0, 10, 0, 10), UDim2.new(1, -20, 0, 20), Enum.Font.GothamBold, Enum.TextXAlignment.Center, mainFrame)
     createDivider(UDim2.new(0, 0, 0, 40))
 
-    -- 2. INFO SECTION
+    -- 2. INFO
     UI.StatusLbl = createText("Status", "Status: 🟢 Running", UDim2.new(0, 15, 0, 45), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
     UI.ServerLbl = createText("Server", "Server: --/--", UDim2.new(0, 15, 0, 65), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
     UI.LastPetLbl = createText("LastPet", "Last Pet: None", UDim2.new(0, 15, 0, 85), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
     UI.TargetLbl = createText("Target", "Target: All Pets", UDim2.new(0, 15, 0, 105), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
     createDivider(UDim2.new(0, 0, 0, 130))
 
-    -- 3. INVENTORY SECTION
+    -- 3. INVENTORY
     createText("InvTitle", "📦 Inventory", UDim2.new(0, 15, 0, 135), UDim2.new(1, -30, 0, 20), Enum.Font.GothamBold, Enum.TextXAlignment.Left, mainFrame)
     
     UI.InvList = Instance.new("ScrollingFrame")
@@ -130,10 +123,9 @@ function UI.Init()
 
     createDivider(UDim2.new(0, 0, 0, 350))
 
-    -- 4. BOTTOM STATUS ANIMATION
-    UI.ActionLbl = createText("Action", ". Đang hoạt động Finder pet .", UDim2.new(0, 10, 0, 365), UDim2.new(1, -20, 0, 20), Enum.Font.GothamItalic, Enum.TextXAlignment.Center, mainFrame)
+    -- 4. BOTTOM (ĐÃ FIX FONT VỀ GOTHAM CHUẨN)
+    UI.ActionLbl = createText("Action", ". Đang hoạt động Finder pet .", UDim2.new(0, 10, 0, 365), UDim2.new(1, -20, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Center, mainFrame)
     
-    -- Hiệu ứng chớp tắt cho dòng Bottom Status
     task.spawn(function()
         local dots = {".", "..", "..."}
         local i = 1
@@ -159,18 +151,12 @@ end
 
 function UI.AddInventory(petName)
     if UI.LastPetLbl then UI.LastPetLbl.Text = "Last Pet: " .. petName end
-    
-    -- Tăng số lượng pet
     UI.InventoryData[petName] = (UI.InventoryData[petName] or 0) + 1
     
-    -- Vẽ lại danh sách Inventory
     if UI.InvList then
-        -- Xóa các item cũ
         for _, child in ipairs(UI.InvList:GetChildren()) do
             if child:IsA("Frame") then child:Destroy() end
         end
-        
-        -- Tạo lại danh sách
         for pName, count in pairs(UI.InventoryData) do
             local itemFrame = Instance.new("Frame")
             itemFrame.Size = UDim2.new(1, -10, 0, 25)
@@ -197,8 +183,6 @@ function UI.AddInventory(petName)
             countLbl.BackgroundTransparency = 1
             countLbl.Parent = itemFrame
         end
-        
-        -- Cập nhật kích thước cuộn
         UI.InvList.CanvasSize = UDim2.new(0, 0, 0, #UI.InvList:GetChildren() * 30)
     end
 end
