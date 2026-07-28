@@ -1,4 +1,4 @@
--- File: PetFinder/hopserver.lua
+-- File: hopserver.lua (Vòng Lặp Nhảy Vĩnh Cửu)
 local Hop = {}
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
@@ -9,15 +9,13 @@ function Hop.Execute()
     local CurrentJobId = game.JobId
     local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     
-    if not req then 
-        warn("[HopServer] Executor không hỗ trợ HTTP request!")
-        return 
-    end
+    if not req then return end
 
-    print("[HopServer] Hết hàng! Đang tìm Server mới...")
+    print("[Kyzen Hub] Bắt đầu tìm Server mới...")
     local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100"):format(PlaceId)
 
-    task.spawn(function()
+    -- Tạo vòng lặp nhảy (Nếu kẹt nó tự nhảy lại)
+    while true do
         local success, res = pcall(function()
             return req({ Url = url, Method = "GET" })
         end)
@@ -26,21 +24,21 @@ function Hop.Execute()
             local data = HttpService:JSONDecode(res.Body)
             
             for _, server in ipairs(data.data) do
-                -- Trừ hao 1 slot để tránh server vừa full
                 if server.id ~= CurrentJobId and server.playing < (server.maxPlayers - 1) then
-                    print("[HopServer] Bay tới: " .. tostring(server.id) .. " (" .. server.playing .. "/" .. server.maxPlayers .. ")")
-                    
+                    print("[Kyzen Hub] Bay qua: " .. tostring(server.id))
                     pcall(function()
                         TeleportService:TeleportToPlaceInstance(PlaceId, server.id, Players.LocalPlayer)
                     end)
-                    break
+                    task.wait(3) -- Đợi 3 giây xem có bay được không
                 end
             end
-        else
-            print("[HopServer] Lỗi API, tự động Rejoin!")
-            TeleportService:Teleport(PlaceId, Players.LocalPlayer)
         end
-    end)
+        -- Nếu chạy hết list mà chưa bay được -> Blind Hop (Nhảy mù)
+        pcall(function()
+            TeleportService:Teleport(PlaceId, Players.LocalPlayer)
+        end)
+        task.wait(5) -- Đợi 5 giây rồi quét tiếp nếu vẫn chưa văng sang server mới
+    end
 end
 
 return Hop
