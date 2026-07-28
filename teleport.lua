@@ -59,3 +59,5 @@ function Teleport.walkTo(targetPos, speed)
 end
 
 return Teleport
+print("lên rồi")
+----- Update 
