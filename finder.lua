@@ -12,7 +12,7 @@ local UI       = loadstring(game:HttpGet(Repo .. "ui.lua"))()
 
 local Config = {
     BuyAllPets = true, 
-    FlySpeed = 150,    
+    FlySpeed = 70,    
     Targets = {        
         ["IceSerpent"]      = true,
         ["Unicorn"]         = true,
