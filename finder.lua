@@ -1,9 +1,8 @@
 -- =======================================================
--- 🚀 KYZEN PET FINDER PREMIUM (MAIN CORE)
+-- 🚀 KYZEN PET FINDER PREMIUM (SMART SCAN CORE)
 -- =======================================================
 repeat task.wait() until game:IsLoaded()
 
--- 1. NẠP VŨ KHÍ TỪ KHO (GITHUB)
 local Repo = "https://raw.githubusercontent.com/kyzen-script/Kyzen-Pet-Finder/refs/heads/main/"
 local Buy      = loadstring(game:HttpGet(Repo .. "buy.lua"))()
 local Combat   = loadstring(game:HttpGet(Repo .. "combat.lua"))()
@@ -11,11 +10,10 @@ local Hop      = loadstring(game:HttpGet(Repo .. "hopserver.lua"))()
 local Teleport = loadstring(game:HttpGet(Repo .. "teleport.lua"))()
 local UI       = loadstring(game:HttpGet(Repo .. "ui.lua"))()
 
--- 2. TRUNG TÂM ĐIỀU KHIỂN (CONFIG)
 local Config = {
-    BuyAllPets = true, -- Bật chế độ "Càn quét mọi loại Pet"
-    FlySpeed = 150,    -- Tốc độ bay (chuẩn an toàn)
-    Targets = {        -- Danh sách VIP (chỉ dùng nếu BuyAllPets = false)
+    BuyAllPets = true, 
+    FlySpeed = 150,    
+    Targets = {        
         ["IceSerpent"]      = true,
         ["Unicorn"]         = true,
         ["BlackDragon"]     = true,
@@ -25,18 +23,15 @@ local Config = {
     }
 }
 
--- 3. KHỞI TẠO BỘ MÁY (FINDER ENGINE)
 local Finder = {
     _running = false,
-    _ignoredPets = {} -- Sổ đen: Lưu các pet bị lỗi/kẹt để bỏ qua
+    _failedAttempts = {} -- Sổ đếm lỗi: Cho cơ hội thử lại 3 lần
 }
 
--- [HÀM CỐT LÕI]: Quét Map và Xử Lý
 function Finder.ScanAndProcess()
     local map = workspace:FindFirstChild("Map")
     local petSpawns = map and map:FindFirstChild("WildPetSpawns")
     
-    -- Nếu map không có thư mục chứa Pet -> Báo cáo hết hàng
     if not petSpawns then return false end
 
     local hasValidPet = false
@@ -44,78 +39,81 @@ function Finder.ScanAndProcess()
     for _, pet in ipairs(petSpawns:GetChildren()) do
         if not Finder._running then break end
         
-        -- Bỏ qua nếu không phải Model hoặc đã nằm trong sổ đen
-        if not pet:IsA("Model") or Finder._ignoredPets[pet] then continue end
+        local failCount = Finder._failedAttempts[pet] or 0
+        
+        -- Nếu không phải Pet hoặc đã cướp hụt QUÁ 3 LẦN thì mới bỏ qua
+        if not pet:IsA("Model") or failCount >= 3 then continue end
 
         local pName = pet:GetAttribute("PetName")
         
-        -- Bộ lọc: Mua tất cả HOẶC Nằm trong danh sách Targets
         if Config.BuyAllPets or (pName and Config.Targets[pName]) then
             local root = pet:FindFirstChild("RootPart")
             if root then
-                hasValidPet = true -- Xác nhận Map này VẪN CÒN hàng
+                hasValidPet = true -- Vẫn còn mục tiêu để làm việc
                 
-                -- BƯỚC A: Bay tới
+                -- BAY TỚI
                 UI.UpdateStatus("✈️ Đang lướt tới: " .. tostring(pName))
                 Teleport.flyTo(root.CFrame * CFrame.new(0, 3, 0), Config.FlySpeed)
-                task.wait(0.2)
+                task.wait(0.5) -- Đợi nhân vật chạm đất đứng vững
                 
-                -- BƯỚC B: Trang bị vũ khí & Quạt tụi KS (Combat)
+                -- ĐÁNH KS
                 Combat.EquipShovel()
                 Combat.DefendPet()
                 
-                -- BƯỚC C: Cướp Pet
+                -- CƯỚP
                 UI.UpdateStatus("⚔️ Đang thu phục: " .. tostring(pName))
                 local success = Buy.interact(pet)
                 
                 if success then
                     UI.AddInventory(pName)
+                    -- ĐIỂM SÁNG: ĐỨNG CHỜ SERVER TRẢ PET VỀ VƯỜN
+                    UI.UpdateStatus("⏳ Thành công! Đang đợi Pet về vườn (4s)...")
+                    task.wait(4)
                 else
-                    -- Lỗi cướp -> Ném vào sổ đen để lần quét sau lơ nó đi
-                    print("[Kyzen Hub] Kẹt ở " .. tostring(pName) .. " -> Ném vào sổ đen!")
-                    Finder._ignoredPets[pet] = true
+                    -- Cướp hụt thì cộng điểm tội lỗi, chưa blacklist ngay
+                    Finder._failedAttempts[pet] = failCount + 1
+                    UI.UpdateStatus("⚠️ Kẹt mạng! Sẽ thử lại vòng sau...")
+                    print("[Kyzen Hub] Cướp hụt " .. tostring(pName) .. " lần " .. (failCount + 1))
+                    task.wait(1)
                 end
             end
         end
     end
 
-    -- Trả về True nếu tìm thấy và xử lý pet, False nếu Map này toàn rác/sổ đen/trống trơn
     return hasValidPet 
 end
 
--- [HÀM KÍCH HOẠT]: Vòng lặp vĩnh cửu
 function Finder.Start()
     Finder._running = true
     
-    -- Khởi động Giao diện
     UI.Init()
     if Config.BuyAllPets then UI.UpdateTarget("All Pets") else UI.UpdateTarget("VIP Whitelist") end
     pcall(function() UI.UpdateServer(#game:GetService("Players"):GetPlayers(), game.Players.MaxPlayers) end)
 
     task.spawn(function()
         print("==================================")
-        print("🚀 KYZEN FINDER ĐÃ LÊN NÒNG!")
+        print("🚀 KYZEN FINDER (SMART) ĐÃ LÊN NÒNG!")
         print("==================================")
         
         while Finder._running do
-            -- Gọi hàm quét
             local mapHasPets = Finder.ScanAndProcess()
             
-            -- LOGIC VÀNG: Quét xong mà báo False -> Đổi Server ngay lập tức!
+            -- HẾT PET HOẶC TOÀN PET BỊ LỖI
             if not mapHasPets and Finder._running then
-                UI.UpdateStatus("🔄 Đã vét sạch Map! Đang bốc đầu qua Server mới...")
-                print("[Kyzen Hub] Không còn Pet mục tiêu. Kích hoạt Hop Server!")
-                Finder._running = false -- Dừng mọi hoạt động ở Server cũ
+                -- BƯỚC CHỐT SỔ AN TOÀN TRƯỚC KHI BAY
+                UI.UpdateStatus("⏳ Hết Pet! Đứng chờ 6s chốt sổ trước khi nhảy...")
+                task.wait(6) 
+                
+                UI.UpdateStatus("🔄 Đã vét sạch sành sanh! Nhảy Server...")
+                Finder._running = false
                 task.wait(1)
                 Hop.Execute()
                 break
             end
             
-            -- Nghỉ ngơi nhẹ trước vòng quét tiếp theo để chống crash
-            task.wait(1)
+            task.wait(1.5)
         end
     end)
 end
 
--- 4. BẤM NÚT START!
 Finder.Start()
