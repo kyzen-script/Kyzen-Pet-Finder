@@ -1,3 +1,4 @@
+-- File: teleport.lua (Bypass Anti-Cheat / Fake Walk)
 local Modules = {}
 Modules.Teleport = {}
 
@@ -12,11 +13,7 @@ function Teleport.walkTo(targetPos, speed)
     
     if not hum or not hrp then return false end
 
-    -- Thiết lập tốc độ 60 chuẩn mượt
-    local oldSpeed = hum.WalkSpeed
-    hum.WalkSpeed = speed or 60 
-
-    -- Bật NoClip (Xuyên vật thể) chống kẹt
+    -- Bật NoClip để lướt xuyên cây cối, bờ rào không bị kẹt
     local noclipConn = RunService.Stepped:Connect(function()
         if char then
             for _, v in pairs(char:GetChildren()) do
@@ -25,32 +22,32 @@ function Teleport.walkTo(targetPos, speed)
         end
     end)
 
+    -- Tính toán quãng đường và thời gian bay (Tốc độ 45 là chống giật lùi tốt nhất)
+    local safeSpeed = speed or 45
+    local dist = (hrp.Position - targetPos).Magnitude
+    local duration = dist / safeSpeed
+
+    local startCFrame = hrp.CFrame
+    local targetCFrame = CFrame.new(targetPos)
+    local startTime = os.clock()
+
+    -- Bơm lệnh MoveTo để game tự động chạy Animation nhún nhảy đôi chân
     hum:MoveTo(targetPos)
 
-    local reached = false
-    local moveConn = hum.MoveToFinished:Connect(function()
-        reached = true
-    end)
-
-    -- Vòng lặp theo dõi khoảng cách (Timeout 8s)
-    local start = os.clock()
-    while not reached and (os.clock() - start) < 8 do
-        task.wait(0.1)
-        hum:MoveTo(targetPos) 
-        
-        if hrp and (hrp.Position - targetPos).Magnitude < 5 then
-            reached = true
-        end
+    -- Vòng lặp nhích CFrame liên tục (Bypass máy chủ)
+    while (os.clock() - startTime) < duration do
+        local alpha = (os.clock() - startTime) / duration
+        hrp.CFrame = startCFrame:Lerp(targetCFrame, alpha)
+        hrp.Velocity = Vector3.new(0, 0, 0) -- Đóng băng trọng lực để không bị rớt
+        task.wait()
     end
 
-    -- Dọn dẹp rác, trả lại trạng thái
+    -- Dọn dẹp rác bộ nhớ
     if noclipConn then noclipConn:Disconnect() end
-    if moveConn then moveConn:Disconnect() end
-    hum.WalkSpeed = oldSpeed
-    
-    -- Chốt vị trí cuối cùng chuẩn xác
-    hrp.CFrame = CFrame.new(targetPos)
-    hrp.Velocity = Vector3.new(0,0,0)
+
+    -- Ép sát vị trí cuối cùng
+    hrp.CFrame = targetCFrame
+    hrp.Velocity = Vector3.new(0, 0, 0)
     
     return true
 end
