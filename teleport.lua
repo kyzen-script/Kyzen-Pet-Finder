@@ -1,4 +1,3 @@
--- File: teleport.lua (Chạy Bộ Xuyên Tường)
 local Modules = {}
 Modules.Teleport = {}
 
@@ -13,11 +12,11 @@ function Teleport.walkTo(targetPos, speed)
     
     if not hum or not hrp then return false end
 
-    -- Bơm tốc độ chạy
+    -- Thiết lập tốc độ 60 chuẩn mượt
     local oldSpeed = hum.WalkSpeed
-    hum.WalkSpeed = speed or 120 
+    hum.WalkSpeed = speed or 60 
 
-    -- Bật NoClip để không kẹt vô gốc cây, hàng rào
+    -- Bật NoClip (Xuyên vật thể) chống kẹt
     local noclipConn = RunService.Stepped:Connect(function()
         if char then
             for _, v in pairs(char:GetChildren()) do
@@ -26,7 +25,6 @@ function Teleport.walkTo(targetPos, speed)
         end
     end)
 
-    -- Ép chạy bằng AI của game
     hum:MoveTo(targetPos)
 
     local reached = false
@@ -34,24 +32,23 @@ function Teleport.walkTo(targetPos, speed)
         reached = true
     end)
 
-    -- Vòng lặp kiểm tra khoảng cách (Timeout 8s chống kẹt)
+    -- Vòng lặp theo dõi khoảng cách (Timeout 8s)
     local start = os.clock()
     while not reached and (os.clock() - start) < 8 do
         task.wait(0.1)
-        hum:MoveTo(targetPos) -- Ép chạy liên tục
+        hum:MoveTo(targetPos) 
         
-        -- Nếu cách Pet 5 mét -> Đến nơi
         if hrp and (hrp.Position - targetPos).Magnitude < 5 then
             reached = true
         end
     end
 
-    -- Dọn dẹp trả lại trạng thái cũ
+    -- Dọn dẹp rác, trả lại trạng thái
     if noclipConn then noclipConn:Disconnect() end
     if moveConn then moveConn:Disconnect() end
     hum.WalkSpeed = oldSpeed
     
-    -- Teleport nhẹ 1 nhịp cuối cùng cho chuẩn xác vị trí
+    -- Chốt vị trí cuối cùng chuẩn xác
     hrp.CFrame = CFrame.new(targetPos)
     hrp.Velocity = Vector3.new(0,0,0)
     
@@ -59,5 +56,3 @@ function Teleport.walkTo(targetPos, speed)
 end
 
 return Teleport
-print("lên rồi")
------ Update 
