@@ -1,41 +1,62 @@
--- File: buy.lua (Đã fix lỗi gọi file nội bộ)
-local Buy = {}
+-- File: buy.lua (GAG Hub Optimized)
+local Modules = {}
+Modules.AutoBuyPet = {}
 
--- SỬA Ở ĐÂY: Gọi module Combat từ GitHub thay vì bộ nhớ máy!
-local Combat = loadstring(game:HttpGet("https://raw.githubusercontent.com/kyzen-script/Kyzen-Pet-Finder/refs/heads/main/combat.lua"))()
+local Buy = Modules.AutoBuyPet
+local Players = game:GetService("Players")
 
-function Buy.Interact(petModel)
+-- Bộ đếm thống kê giống hệt GAG Hub
+Buy._stats = { bought = 0, errors = 0, scanned = 0 }
+Buy._running = false
+
+-- Hàm tương tác siêu an toàn (Sử dụng pcall)
+function Buy.interact(petModel)
     local root = petModel:FindFirstChild("RootPart")
-    if not root then return false end
+    if not root then 
+        Buy._stats.errors += 1
+        return false 
+    end
     
     local prompt = root:FindFirstChild("BuyPrompt") or root:FindFirstChildOfClass("ProximityPrompt")
-    if not prompt or not prompt.Enabled then return false end
+    if not prompt or not prompt.Enabled then 
+        Buy._stats.errors += 1
+        return false 
+    end
     
-    local pName = petModel:GetAttribute("PetName") or "Ẩn Danh"
-    print("[Buy] Đang chiếm đóng: " .. pName .. " | Kích hoạt Vòng Tròn Tử Thần!")
+    local pName = petModel:GetAttribute("PetName") or "Unknown"
+    local successAction = false
     
-    -- Tự động cầm xẻng lên trước khi húp Pet
-    Combat.EquipShovel()
-    
+    -- Vòng lặp Spam mua an toàn (Timeout 2 giây)
     local attempts = 0
-    -- Trong lúc chờ mua (Timeout 1.5s), vừa spam E vừa vung xẻng
-    while petModel.Parent and prompt.Enabled and attempts < 15 do
-        -- Đánh tụi KS
-        Combat.DefendPet()
+    while petModel.Parent and prompt.Enabled and attempts < 20 do
+        local ok, err = pcall(function()
+            fireproximityprompt(prompt)
+        end)
         
-        -- Spam mua
-        fireproximityprompt(prompt)
+        if not ok then
+            warn("[Kyzen Hub] Lỗi bấm nút mua:", err)
+        end
         
-        attempts = attempts + 1
+        attempts += 1
         task.wait(0.1)
     end
     
+    -- Kiểm tra kết quả (Nếu con Pet biến mất khỏi map hoặc Prompt tắt -> Đã mua)
     if not petModel.Parent or not prompt.Enabled then
-        print("[Buy] ✅ Bỏ túi thành công: " .. pName)
-        return true
+        Buy._stats.bought += 1
+        print("[Kyzen Hub] Mua thành công:", pName)
+        successAction = true
+    else
+        Buy._stats.errors += 1
+        print("[Kyzen Hub] Mua thất bại (Kẹt mạng):", pName)
     end
     
-    return false
+    return successAction
+end
+
+-- Trả về bảng thống kê để UI lấy dữ liệu
+function Buy.getStats()
+    return Buy._stats
 end
 
 return Buy
