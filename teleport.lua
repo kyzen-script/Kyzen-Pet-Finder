@@ -1,70 +1,59 @@
--- File: teleport.lua (GAG Hub Optimized)
+-- File: teleport.lua (Chạy Bộ Xuyên Tường)
 local Modules = {}
 Modules.Teleport = {}
 
 local Teleport = Modules.Teleport
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local LP = Players.LocalPlayer
 
-Teleport._running = false
-Teleport._connections = {}
-
-function Teleport.flyTo(targetCFrame, speed)
-    local char = LP.Character
+function Teleport.walkTo(targetPos, speed)
+    local char = Players.LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-
-    -- Tính toán thời gian bay để không bị Anti-Cheat văng (Tốc độ chuẩn: 150-200 studs/s)
-    local dist = (hrp.Position - targetCFrame.Position).Magnitude
-    local timeToTravel = dist / (speed or 150)
     
-    -- Tránh lỗi bay quá nhanh nếu ở quá gần
-    if timeToTravel < 0.1 then timeToTravel = 0.1 end
+    if not hum or not hrp then return false end
 
-    local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    -- Bơm tốc độ chạy
+    local oldSpeed = hum.WalkSpeed
+    hum.WalkSpeed = speed or 120 
 
-    -- Bật NoClip (Tàng hình vật lý) trong lúc bay
+    -- Bật NoClip để không kẹt vô gốc cây, hàng rào
     local noclipConn = RunService.Stepped:Connect(function()
         if char then
             for _, v in pairs(char:GetChildren()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = false
-                end
+                if v:IsA("BasePart") then v.CanCollide = false end
             end
-            -- Đóng băng gia tốc để không bị rớt do trọng lực
-            hrp.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 
-    -- Thực thi chuyến bay
-    tween:Play()
-    
-    -- Đợi bay tới nơi hoặc bị hủy
-    local completed = false
-    local finishConn
-    finishConn = tween.Completed:Connect(function()
-        completed = true
+    -- Ép chạy bằng AI của game
+    hum:MoveTo(targetPos)
+
+    local reached = false
+    local moveConn = hum.MoveToFinished:Connect(function()
+        reached = true
     end)
 
-    -- Timeout an toàn (Chống kẹt vòng lặp)
+    -- Vòng lặp kiểm tra khoảng cách (Timeout 8s chống kẹt)
     local start = os.clock()
-    while not completed and (os.clock() - start) < (timeToTravel + 1) do
-        task.wait(0.05)
+    while not reached and (os.clock() - start) < 8 do
+        task.wait(0.1)
+        hum:MoveTo(targetPos) -- Ép chạy liên tục
+        
+        -- Nếu cách Pet 5 mét -> Đến nơi
+        if hrp and (hrp.Position - targetPos).Magnitude < 5 then
+            reached = true
+        end
     end
 
-    -- Dọn dẹp rác (Garbage Collection)
+    -- Dọn dẹp trả lại trạng thái cũ
     if noclipConn then noclipConn:Disconnect() end
-    if finishConn then finishConn:Disconnect() end
-    if tween.PlaybackState ~= Enum.PlaybackState.Completed then
-        tween:Cancel()
-    end
+    if moveConn then moveConn:Disconnect() end
+    hum.WalkSpeed = oldSpeed
     
-    -- Chốt lại vị trí cuối
-    hrp.CFrame = targetCFrame
-    hrp.Velocity = Vector3.new(0, 0, 0)
+    -- Teleport nhẹ 1 nhịp cuối cùng cho chuẩn xác vị trí
+    hrp.CFrame = CFrame.new(targetPos)
+    hrp.Velocity = Vector3.new(0,0,0)
     
     return true
 end
