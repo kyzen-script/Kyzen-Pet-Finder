@@ -21,7 +21,7 @@ local Teleport = loadstring(game:HttpGet(Repo .. "teleport.lua"))()
 local UI       = loadstring(game:HttpGet(Repo .. "ui.lua"))()
 
 local Config = {
-    WalkSpeed = 120,    
+    WalkSpeed = 45,    
 }
 
 -- BẢNG XẾP HẠNG PET (Để chọn con VIP nhất đứng bảo vệ)
