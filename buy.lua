@@ -1,7 +1,8 @@
--- File: PetFinder/buy.lua
+-- File: buy.lua (Đã fix lỗi gọi file nội bộ)
 local Buy = {}
--- Gọi thêm thằng vệ sĩ vào đây
-local Combat = loadstring(readfile("PetFinder/combat.lua"))()
+
+-- SỬA Ở ĐÂY: Gọi module Combat từ GitHub thay vì bộ nhớ máy!
+local Combat = loadstring(game:HttpGet("https://raw.githubusercontent.com/kyzen-script/Kyzen-Pet-Finder/refs/heads/main/combat.lua"))()
 
 function Buy.Interact(petModel)
     local root = petModel:FindFirstChild("RootPart")
@@ -38,4 +39,3 @@ function Buy.Interact(petModel)
 end
 
 return Buy
-
