@@ -1,8 +1,18 @@
 -- =======================================================
--- 🚀 KYZEN PET FINDER PREMIUM (SMART SCAN CORE)
+-- 🚀 KYZEN PET FINDER PREMIUM PRO MAX (24/7 AFK)
 -- =======================================================
 repeat task.wait() until game:IsLoaded()
 
+-- 🛡️ SKILL 1: ANTI-AFK (CHỐNG KICK 20 PHÚT CỦA ROBLOX)
+local VirtualUser = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    print("[Kyzen Hub] Đã bypass AFK 20 phút!")
+end)
+
+-- NẠP MODULES
 local Repo = "https://raw.githubusercontent.com/kyzen-script/Kyzen-Pet-Finder/refs/heads/main/"
 local Buy      = loadstring(game:HttpGet(Repo .. "buy.lua"))()
 local Combat   = loadstring(game:HttpGet(Repo .. "combat.lua"))()
@@ -11,106 +21,117 @@ local Teleport = loadstring(game:HttpGet(Repo .. "teleport.lua"))()
 local UI       = loadstring(game:HttpGet(Repo .. "ui.lua"))()
 
 local Config = {
-    BuyAllPets = true, 
-    FlySpeed = 70,    
-    Targets = {        
-        ["IceSerpent"]      = true,
-        ["Unicorn"]         = true,
-        ["BlackDragon"]     = true,
-        ["Firefly"]         = true,
-        ["GoldenDragonfly"] = true,
-        ["Raccoon"]         = true
-    }
+    WalkSpeed = 120,    
 }
 
-local Finder = {
-    _running = false,
-    _failedAttempts = {} -- Sổ đếm lỗi: Cho cơ hội thử lại 3 lần
+-- BẢNG XẾP HẠNG PET (Để chọn con VIP nhất đứng bảo vệ)
+local RarityScore = {
+    ["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3,
+    ["Epic"] = 4, ["Legendary"] = 5, ["Mythic"] = 6, ["Super"] = 7
 }
+
+local Finder = { _running = false }
+
+-- HÀM TÌM ĐỘ HIẾM TỪ TÊN
+local function GetPetScore(petName)
+    -- Giả lập: Nếu không có API lấy độ hiếm, ta ưu tiên theo tên hoặc gán ngẫu nhiên
+    -- Bạn có thể bổ sung thêm tên các con pet siêu hiếm vào đây để nó ưu tiên (ví dụ: IceSerpent = 6)
+    if string.match(petName, "Dragon") or string.match(petName, "Serpent") then return 6 end
+    if string.match(petName, "Unicorn") then return 5 end
+    return math.random(1, 3) -- Rác thì random
+end
 
 function Finder.ScanAndProcess()
     local map = workspace:FindFirstChild("Map")
     local petSpawns = map and map:FindFirstChild("WildPetSpawns")
     
     if not petSpawns then return false end
+    
+    local pets = petSpawns:GetChildren()
+    -- QUÉT THÔNG MINH: Map trống không 1 bóng Pet -> Báo False để nhảy Server
+    if #pets == 0 then return false end 
 
-    local hasValidPet = false
+    local bestPetModel = nil
+    local highestScore = 0
 
-    for _, pet in ipairs(petSpawns:GetChildren()) do
+    -- PHA 1: CHẠY BỘ ĐI MUA SẠCH BÁCH TẤT CẢ PET TRONG MAP
+    for _, pet in ipairs(pets) do
         if not Finder._running then break end
-        
-        local failCount = Finder._failedAttempts[pet] or 0
-        
-        -- Nếu không phải Pet hoặc đã cướp hụt QUÁ 3 LẦN thì mới bỏ qua
-        if not pet:IsA("Model") or failCount >= 3 then continue end
-
-        local pName = pet:GetAttribute("PetName")
-        
-        if Config.BuyAllPets or (pName and Config.Targets[pName]) then
+        if pet:IsA("Model") then
+            local pName = pet:GetAttribute("PetName") or "Ẩn Danh"
             local root = pet:FindFirstChild("RootPart")
+            
             if root then
-                hasValidPet = true -- Vẫn còn mục tiêu để làm việc
+                UI.UpdateStatus("🏃 Đang chạy tới cướp: " .. pName)
+                -- Gọi chạy bộ (walkTo) thay vì bay
+                Teleport.walkTo(root.Position, Config.WalkSpeed)
+                task.wait(0.2)
                 
-                -- BAY TỚI
-                UI.UpdateStatus("✈️ Đang lướt tới: " .. tostring(pName))
-                Teleport.flyTo(root.CFrame * CFrame.new(0, 3, 0), Config.FlySpeed)
-                task.wait(0.5) -- Đợi nhân vật chạm đất đứng vững
-                
-                -- ĐÁNH KS
+                -- Vừa spam E cướp vừa oánh nhau
                 Combat.EquipShovel()
                 Combat.DefendPet()
-                
-                -- CƯỚP
-                UI.UpdateStatus("⚔️ Đang thu phục: " .. tostring(pName))
                 local success = Buy.interact(pet)
                 
                 if success then
                     UI.AddInventory(pName)
-                    -- ĐIỂM SÁNG: ĐỨNG CHỜ SERVER TRẢ PET VỀ VƯỜN
-                    UI.UpdateStatus("⏳ Thành công! Đang đợi Pet về vườn (4s)...")
-                    task.wait(4)
-                else
-                    -- Cướp hụt thì cộng điểm tội lỗi, chưa blacklist ngay
-                    Finder._failedAttempts[pet] = failCount + 1
-                    UI.UpdateStatus("⚠️ Kẹt mạng! Sẽ thử lại vòng sau...")
-                    print("[Kyzen Hub] Cướp hụt " .. tostring(pName) .. " lần " .. (failCount + 1))
-                    task.wait(1)
+                    
+                    -- Chấm điểm xem con này có xịn không
+                    local score = GetPetScore(pName)
+                    if score > highestScore and pet.Parent then
+                        highestScore = score
+                        bestPetModel = pet
+                    end
                 end
             end
         end
     end
 
-    return hasValidPet 
+    -- PHA 2: CHẾ ĐỘ VỆ SĨ VIP (Đứng bảo vệ con Pet xịn nhất)
+    if bestPetModel and bestPetModel.Parent then
+        local vipName = bestPetModel:GetAttribute("PetName") or "Pet VIP"
+        UI.UpdateStatus("🛡️ Đang bảo vệ VIP: " .. vipName)
+        print("[Kyzen Hub] Kích hoạt Vệ Sĩ cho " .. vipName)
+        
+        local root = bestPetModel:FindFirstChild("RootPart")
+        if root then
+            -- Trèo lên đầu nó (Y + 3)
+            Teleport.walkTo(root.Position + Vector3.new(0, 3, 0), Config.WalkSpeed)
+            
+            -- Đứng quạt xẻng liên tục cho đến khi Server vứt con Pet vào vườn (Model biến mất)
+            local timeout = 0
+            while bestPetModel.Parent and timeout < 100 do -- max 10s chờ
+                Combat.DefendPet()
+                task.wait(0.1)
+                timeout = timeout + 1
+            end
+        end
+        UI.UpdateStatus("✅ Hàng đã về vườn an toàn!")
+    end
+
+    return true -- Trả về true vì vẫn vừa cướp xong, vòng sau sẽ check lại xem còn sót con nào không
 end
 
 function Finder.Start()
     Finder._running = true
-    
     UI.Init()
-    if Config.BuyAllPets then UI.UpdateTarget("All Pets") else UI.UpdateTarget("VIP Whitelist") end
+    UI.UpdateTarget("All Pets - VIP Protect")
     pcall(function() UI.UpdateServer(#game:GetService("Players"):GetPlayers(), game.Players.MaxPlayers) end)
 
     task.spawn(function()
         print("==================================")
-        print("🚀 KYZEN FINDER (SMART) ĐÃ LÊN NÒNG!")
+        print("🚀 KYZEN FINDER (PRO MAX 24/7) ACTIVE!")
         print("==================================")
         
         while Finder._running do
-            local mapHasPets = Finder.ScanAndProcess()
+            local hasPets = Finder.ScanAndProcess()
             
-            -- HẾT PET HOẶC TOÀN PET BỊ LỖI
-            if not mapHasPets and Finder._running then
-                -- BƯỚC CHỐT SỔ AN TOÀN TRƯỚC KHI BAY
-                UI.UpdateStatus("⏳ Hết Pet! Đứng chờ 6s chốt sổ trước khi nhảy...")
-                task.wait(6) 
-                
-                UI.UpdateStatus("🔄 Đã vét sạch sành sanh! Nhảy Server...")
-                Finder._running = false
-                task.wait(1)
+            -- CHỈ NHẢY KHI MAP TRỐNG TRƠN (#pets == 0)
+            if not hasPets and Finder._running then
+                UI.UpdateStatus("🔄 Map đã sạch bóng! Đang đổi Server...")
+                task.wait(2)
                 Hop.Execute()
                 break
             end
-            
             task.wait(1.5)
         end
     end)
