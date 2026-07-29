@@ -4,16 +4,37 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
-function Hop.Execute()
-    local PlaceId = game.PlaceId
-    local CurrentJobId = game.JobId
-    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    
-    if not req then return end
+local PlaceId = game.PlaceId
+local CurrentJobId = game.JobId
 
-    print("[Kyzen Hub] Bắt đầu tìm Server mới...")
-    local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100"):format(PlaceId)
+local req = request or http_request
 
+assert(req, "Executor không hỗ trợ HTTP request!")
+
+local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100"):format(PlaceId)
+
+local res = req({
+    Url = url,
+    Method = "GET"
+})
+
+local data = HttpService:JSONDecode(res.Body)
+
+for _, server in ipairs(data.data) do
+    if server.id ~= CurrentJobId and server.playing < server.maxPlayers then
+        print("Hop tới:", server.id, server.playing.."/"..server.maxPlayers)
+
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(
+                PlaceId,
+                server.id,
+                Players.LocalPlayer
+            )
+        end)
+
+        break
+    end
+end
     -- Tạo vòng lặp nhảy (Nếu kẹt nó tự nhảy lại)
     while true do
         local success, res = pcall(function()
