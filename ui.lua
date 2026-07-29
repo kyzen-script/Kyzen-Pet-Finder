@@ -1,49 +1,51 @@
--- File: ui.lua (Đã Fix Lỗi Font Chữ)
+-- =======================================================
+-- 🎨 KYZEN PET FINDER - GIAO DIỆN PREMIUM (THEME HỒNG)
+-- =======================================================
 local UI = {}
 local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- ⚙️ CONFIG UI
-local IMAGE_ID = "rbxassetid://105468345186897" -- Chỗ này lát ông thay ID ảnh của ông nhé
-local BORDER_COLOR = Color3.fromRGB(255, 105, 180) -- Hot Pink
-local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
-local BG_COLOR = Color3.fromRGB(20, 20, 20)
+-- ⚙️ CONFIG MÀU SẮC & HÌNH ẢNH
+local IMAGE_ID = "rbxassetid://105468345186897" -- Ảnh nền của ông
+local PINK = Color3.fromRGB(255, 105, 180)      -- Hồng Hot Pink
+local LIGHT_PINK = Color3.fromRGB(255, 180, 210) -- Hồng phấn (Tiêu đề)
+local TEXT_COLOR = Color3.fromRGB(255, 255, 255) -- Trắng tuyết
 
 UI.InventoryData = {}
 
 function UI.Init()
+    -- Xóa UI cũ nếu có
     local oldUi = CoreGui:FindFirstChild("KyzenPetFinderUI")
     if oldUi then oldUi:Destroy() end
 
     local screen = Instance.new("ScreenGui")
     screen.Name = "KyzenPetFinderUI"
+    screen.ResetOnSpawn = false
     screen.Parent = (gethui and gethui()) or CoreGui
 
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 300, 0, 400)
-    mainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-    mainFrame.BackgroundColor3 = BG_COLOR
-    mainFrame.Parent = screen
+    -- 1. TẠO KHUNG NỀN CHÍNH (ẢNH NỀN)
+    local mainFrame = Instance.new("ImageLabel")
+    mainFrame.Size = UDim2.new(0, 340, 0, 460)
+    mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    mainFrame.BackgroundTransparency = 1 
+    mainFrame.Image = IMAGE_ID
+    mainFrame.ScaleType = Enum.ScaleType.Crop
+    mainFrame.ImageTransparency = 1 -- Bắt đầu vô hình để làm Animation
+    mainFrame.ClipsDescendants = true
     mainFrame.Active = true
-    
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 8)
-    uiCorner.Parent = mainFrame
+    mainFrame.Parent = screen
 
-    local uiStroke = Instance.new("UIStroke")
-    uiStroke.Color = BORDER_COLOR
+    local uiCorner = Instance.new("UICorner", mainFrame)
+    uiCorner.CornerRadius = UDim.new(0, 10)
+
+    local uiStroke = Instance.new("UIStroke", mainFrame)
+    uiStroke.Color = PINK
     uiStroke.Thickness = 2
-    uiStroke.Parent = mainFrame
+    uiStroke.Transparency = 1
 
-    local bgImage = Instance.new("ImageLabel")
-    bgImage.Size = UDim2.new(1, 0, 1, 0)
-    bgImage.BackgroundTransparency = 1
-    bgImage.Image = IMAGE_ID
-    bgImage.ImageTransparency = 0.8
-    bgImage.Parent = mainFrame
-    bgImage.ZIndex = 0
-
+    -- Kéo thả UI mượt mà
     local dragging, dragInput, dragStart, startPos
     mainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -69,74 +71,121 @@ function UI.Init()
         end
     end)
 
-    local function createText(name, text, pos, size, font, align, parent)
+    -- Hàm hỗ trợ tạo Text
+    local function createText(name, text, pos, size, font, align, color, parent)
         local lbl = Instance.new("TextLabel")
         lbl.Name = name
         lbl.Text = text
         lbl.Position = pos
         lbl.Size = size
         lbl.Font = font
-        lbl.TextColor3 = TEXT_COLOR
+        lbl.TextColor3 = color
         lbl.TextXAlignment = align
         lbl.BackgroundTransparency = 1
+        lbl.TextTransparency = 1 
         lbl.Parent = parent
-        lbl.ZIndex = 2
-        return lbl
+        lbl.ZIndex = 3
+        
+        -- Viền đen mỏng cho chữ dễ đọc trên nền ảnh
+        local txtStroke = Instance.new("UIStroke", lbl)
+        txtStroke.Transparency = 1
+        txtStroke.Thickness = 1
+        txtStroke.Color = Color3.fromRGB(0, 0, 0)
+        
+        return lbl, txtStroke
     end
 
-    local function createDivider(pos)
-        local div = Instance.new("Frame")
-        div.Size = UDim2.new(1, 0, 0, 1)
-        div.Position = pos
-        div.BackgroundColor3 = BORDER_COLOR
-        div.BorderSizePixel = 0
-        div.Parent = mainFrame
-        div.ZIndex = 2
-    end
+    -- 2. TIÊU ĐỀ
+    local Title, tStroke = createText("Title", "KYZEN HUB PREMIUM", UDim2.new(0, 10, 0, 10), UDim2.new(1, -20, 0, 30), Enum.Font.GothamBold, Enum.TextXAlignment.Center, LIGHT_PINK, mainFrame)
+    Title.TextSize = 20
 
-    -- 1. TITLE
-    createText("Title", "🐾 Kyzen Pet Finder Premium", UDim2.new(0, 10, 0, 10), UDim2.new(1, -20, 0, 20), Enum.Font.GothamBold, Enum.TextXAlignment.Center, mainFrame)
-    createDivider(UDim2.new(0, 0, 0, 40))
+    -- 3. KHUNG THÔNG TIN STATUS (Nền đen mờ nhìn xuyên thấu)
+    local infoBox = Instance.new("Frame", mainFrame)
+    infoBox.Size = UDim2.new(1, -30, 0, 100)
+    infoBox.Position = UDim2.new(0, 15, 0, 50)
+    infoBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    infoBox.BackgroundTransparency = 1
+    local infoCorner = Instance.new("UICorner", infoBox)
+    infoCorner.CornerRadius = UDim.new(0, 8)
+    local infoStroke = Instance.new("UIStroke", infoBox)
+    infoStroke.Color = PINK
+    infoStroke.Thickness = 1
+    infoStroke.Transparency = 1
 
-    -- 2. INFO
-    UI.StatusLbl = createText("Status", "Status: 🟢 Running", UDim2.new(0, 15, 0, 45), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
-    UI.ServerLbl = createText("Server", "Server: --/--", UDim2.new(0, 15, 0, 65), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
-    UI.LastPetLbl = createText("LastPet", "Last Pet: None", UDim2.new(0, 15, 0, 85), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
-    UI.TargetLbl = createText("Target", "Target: All Pets", UDim2.new(0, 15, 0, 105), UDim2.new(1, -30, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, mainFrame)
-    createDivider(UDim2.new(0, 0, 0, 130))
-
-    -- 3. INVENTORY
-    createText("InvTitle", "📦 Inventory", UDim2.new(0, 15, 0, 135), UDim2.new(1, -30, 0, 20), Enum.Font.GothamBold, Enum.TextXAlignment.Left, mainFrame)
+    local s1, ss1 = createText("Status", "Status: 🟢 Khởi động...", UDim2.new(0, 10, 0, 10), UDim2.new(1, -20, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, TEXT_COLOR, infoBox)
+    local s2, ss2 = createText("Server", "Server: --/--", UDim2.new(0, 10, 0, 30), UDim2.new(1, -20, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, TEXT_COLOR, infoBox)
+    local s3, ss3 = createText("LastPet", "Last Pet: None", UDim2.new(0, 10, 0, 50), UDim2.new(1, -20, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, TEXT_COLOR, infoBox)
+    local s4, ss4 = createText("Target", "Target: Loading...", UDim2.new(0, 10, 0, 70), UDim2.new(1, -20, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Left, TEXT_COLOR, infoBox)
     
-    UI.InvList = Instance.new("ScrollingFrame")
-    UI.InvList.Size = UDim2.new(1, -20, 0, 180)
-    UI.InvList.Position = UDim2.new(0, 10, 0, 160)
-    UI.InvList.BackgroundTransparency = 1
-    UI.InvList.ScrollBarThickness = 4
-    UI.InvList.ScrollBarImageColor3 = BORDER_COLOR
-    UI.InvList.Parent = mainFrame
-    UI.InvList.ZIndex = 2
+    UI.StatusLbl = s1
+    UI.ServerLbl = s2
+    UI.LastPetLbl = s3
+    UI.TargetLbl = s4
+
+    -- 4. INVENTORY (Bảng cuộn)
+    local InvTitle, itStroke = createText("InvTitle", "📦 INVENTORY", UDim2.new(0, 15, 0, 160), UDim2.new(1, -30, 0, 25), Enum.Font.GothamBold, Enum.TextXAlignment.Left, PINK, mainFrame)
     
-    local listLayout = Instance.new("UIListLayout")
+    UI.InvList = Instance.new("ScrollingFrame", mainFrame)
+    UI.InvList.Size = UDim2.new(1, -30, 0, 210)
+    UI.InvList.Position = UDim2.new(0, 15, 0, 190)
+    UI.InvList.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    UI.InvList.BackgroundTransparency = 1 
+    UI.InvList.ScrollBarThickness = 3
+    UI.InvList.ScrollBarImageColor3 = PINK
+    UI.InvList.BorderSizePixel = 0
+    UI.InvList.ZIndex = 3
+    
+    local invCorner = Instance.new("UICorner", UI.InvList)
+    invCorner.CornerRadius = UDim.new(0, 8)
+    local invUIStroke = Instance.new("UIStroke", UI.InvList)
+    invUIStroke.Color = PINK
+    invUIStroke.Transparency = 1
+    invUIStroke.Thickness = 1
+
+    local listLayout = Instance.new("UIListLayout", UI.InvList)
     listLayout.Padding = UDim.new(0, 5)
-    listLayout.Parent = UI.InvList
 
-    createDivider(UDim2.new(0, 0, 0, 350))
-
-    -- 4. BOTTOM (ĐÃ FIX FONT VỀ GOTHAM CHUẨN)
-    UI.ActionLbl = createText("Action", ". Đang hoạt động Finder pet .", UDim2.new(0, 10, 0, 365), UDim2.new(1, -20, 0, 20), Enum.Font.Gotham, Enum.TextXAlignment.Center, mainFrame)
+    -- 5. CHỮ CHẠY NHẤP NHÁY DƯỚI CÙNG
+    UI.ActionLbl, UI.ActionStroke = createText("Action", ". Kyzen System .", UDim2.new(0, 10, 0, 420), UDim2.new(1, -20, 0, 20), Enum.Font.GothamBold, Enum.TextXAlignment.Center, PINK, mainFrame)
     
+    -- 🎬 KÍCH HOẠT HIỆU ỨNG ANIMATION (FADE-IN MƯỢT MÀ)
+    local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    
+    TweenService:Create(mainFrame, tweenInfo, {ImageTransparency = 0}):Play()
+    TweenService:Create(uiStroke, tweenInfo, {Transparency = 0}):Play()
+    
+    TweenService:Create(Title, tweenInfo, {TextTransparency = 0}):Play()
+    TweenService:Create(tStroke, tweenInfo, {Transparency = 0}):Play()
+    TweenService:Create(InvTitle, tweenInfo, {TextTransparency = 0}):Play()
+    TweenService:Create(itStroke, tweenInfo, {Transparency = 0}):Play()
+    TweenService:Create(UI.ActionLbl, tweenInfo, {TextTransparency = 0}):Play()
+    TweenService:Create(UI.ActionStroke, tweenInfo, {Transparency = 0}):Play()
+    
+    TweenService:Create(infoBox, tweenInfo, {BackgroundTransparency = 0.5}):Play()
+    TweenService:Create(infoStroke, tweenInfo, {Transparency = 0}):Play()
+    TweenService:Create(UI.InvList, tweenInfo, {BackgroundTransparency = 0.5}):Play()
+    TweenService:Create(invUIStroke, tweenInfo, {Transparency = 0}):Play()
+
+    -- Bật hiển thị chữ
+    local texts = {{s1,ss1}, {s2,ss2}, {s3,ss3}, {s4,ss4}}
+    for _, tbl in ipairs(texts) do
+        TweenService:Create(tbl[1], tweenInfo, {TextTransparency = 0}):Play()
+        TweenService:Create(tbl[2], tweenInfo, {Transparency = 0}):Play()
+    end
+
+    -- Hiệu ứng chữ chạy dưới cùng
     task.spawn(function()
         local dots = {".", "..", "..."}
         local i = 1
         while UI.ActionLbl and UI.ActionLbl.Parent do
-            UI.ActionLbl.Text = dots[i] .. " Đang hoạt động Finder pet " .. dots[i]
+            UI.ActionLbl.Text = dots[i] .. " Hệ thống đang quét Pet " .. dots[i]
             i = i % 3 + 1
             task.wait(0.5)
         end
     end)
 end
 
+-- CÁC HÀM CẬP NHẬT THÔNG TIN (Giữ nguyên logic cũ)
 function UI.UpdateStatus(text)
     if UI.StatusLbl then UI.StatusLbl.Text = "Status: " .. text end
 end
@@ -178,7 +227,7 @@ function UI.AddInventory(petName)
             countLbl.Position = UDim2.new(0.7, 0, 0, 0)
             countLbl.Text = "x" .. tostring(count)
             countLbl.Font = Enum.Font.GothamBold
-            countLbl.TextColor3 = BORDER_COLOR
+            countLbl.TextColor3 = PINK
             countLbl.TextXAlignment = Enum.TextXAlignment.Right
             countLbl.BackgroundTransparency = 1
             countLbl.Parent = itemFrame
