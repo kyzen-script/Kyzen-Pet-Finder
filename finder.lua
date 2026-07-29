@@ -3,6 +3,42 @@
 -- =======================================================
 repeat task.wait() until game:IsLoaded()
 
+-- ==========================================
+-- 🧨 SCRIPT XOÁ SẠCH VƯỜN (CHẠY PHÁT ĂN LUÔN)
+-- ==========================================
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+local Gardens = workspace:FindFirstChild("Gardens")
+local count = 0
+
+if Gardens then
+    for _, garden in ipairs(Gardens:GetChildren()) do
+        -- Xoá toàn bộ các khu vườn có trong Map
+        -- (Chỉ có tác dụng dọn dẹp hiển thị trên máy của ông)
+        garden:Destroy()
+        count = count + 1
+    end
+    
+    -- In ra F9 (Console) để báo cáo thành tích
+    print("💥 BÙM! Đã xoá sổ thành công " .. count .. " khu vườn khỏi bản đồ!")
+    
+    -- Tạo một cái thông báo nhỏ góc màn hình cho ngầu
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Phá Hoại Thành Công",
+        Text = "Đã dọn dẹp sạch sẽ " .. count .. " khu vườn!",
+        Duration = 3
+    })
+else
+    warn("❌ Không tìm thấy khu vườn nào trên Map!")
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Lỗi Xoá Vườn",
+        Text = "Không tìm thấy thư mục Gardens!",
+        Duration = 3
+    })
+end
+
 -- 🛡️ SKILL 0: AUTO BYPASS LOADING SCREEN (Tự động bấm Play/Skip)
 task.spawn(function()
     local LP = game:GetService("Players").LocalPlayer
