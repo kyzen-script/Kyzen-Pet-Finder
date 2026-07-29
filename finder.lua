@@ -3,6 +3,50 @@
 -- =======================================================
 repeat task.wait() until game:IsLoaded()
 
+-- 🛡️ SKILL 0: AUTO BYPASS LOADING SCREEN (Tự động bấm Play/Skip)
+task.spawn(function()
+    local LP = game:GetService("Players").LocalPlayer
+    local PlayerGui = LP:WaitForChild("PlayerGui")
+    
+    print("[Kyzen Hub] Đang dò tìm nút Loading để bấm bỏ qua...")
+    
+    -- Cho nó lặp liên tục trong 15 giây đầu khi vừa vào server
+    local startTime = os.clock()
+    while (os.clock() - startTime) < 15 do
+        for _, gui in pairs(PlayerGui:GetDescendants()) do
+            if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+                local name = string.lower(gui.Name)
+                local text = gui:IsA("TextButton") and string.lower(gui.Text) or ""
+                
+                -- Nhận diện các nút mang ý nghĩa "Bỏ qua" hoặc "Vào game"
+                if string.find(name, "play") or string.find(text, "play") or 
+                   string.find(name, "skip") or string.find(text, "skip") or
+                   string.find(name, "continue") or string.find(text, "continue") or
+                   string.find(name, "close") or string.find(text, "close") then
+                    
+                    pcall(function()
+                        -- Dùng quyền năng của Executor ép nút đó phải chạy
+                        if getconnections then
+                            for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
+                                conn:Function() -- Hoặc conn:Fire()
+                            end
+                            for _, conn in ipairs(getconnections(gui.MouseButton1Down)) do
+                                conn:Function()
+                            end
+                        end
+                    end)
+                end
+            end
+        end
+        task.wait(1) -- Mỗi 1 giây quét 1 lần
+    end
+    print("[Kyzen Hub] Đã qua vòng gửi xe (Loading Screen)!")
+end)
+
+-- 🛡️ SKILL 1: ANTI-AFK (CHỐNG KICK 20 PHÚT CỦA ROBLOX)
+-- ... (Giữ nguyên toàn bộ phần code NẠP MODULES và Finder ở dưới của ông) ...
+
+
 -- 🛡️ SKILL 1: ANTI-AFK (CHỐNG KICK 20 PHÚT CỦA ROBLOX)
 local VirtualUser = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:Connect(function()
