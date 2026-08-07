@@ -20,7 +20,7 @@ end)
 
 local Teleport = {}
 
-Teleport.Speed = 50
+Teleport.Speed = 20
 Teleport.Height = 2.5
 
 local currentTween
