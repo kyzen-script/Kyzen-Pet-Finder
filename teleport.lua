@@ -5,20 +5,22 @@
 
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService") -- Đã thêm dòng này!
 
 local LP = Players.LocalPlayer
 
 local noclipConn = RunService.Stepped:Connect(function()
-        if char then
-            for _, v in pairs(char:GetChildren()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
-            end
+    local char = LP.Character -- Đã thêm dòng này để nó biết char là ai!
+    if char then
+        for _, v in pairs(char:GetChildren()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
         end
-    end)
+    end
+end)
 
 local Teleport = {}
 
-Teleport.Speed = 55
+Teleport.Speed = 50
 Teleport.Height = 2.5
 
 local currentTween
