@@ -67,7 +67,7 @@ local Hop      = LoadModule("hopserver.lua")
 local Teleport = LoadModule("teleport.lua")
 local UI       = LoadModule("ui.lua")
 
-local Config = { WalkSpeed = 45 }
+local Config = { WalkSpeed = 20 }
 local Finder = { _running = false }
 
 -- 📋 DANH SÁCH WHITELIST PET CẦN BẮT
@@ -77,7 +77,6 @@ local WantedPets = {
     ["Butterfly"] = true,
     ["Unicorn"] = true,
     ["Dragonfly"] = true,
-    ["Bunny"] = true,
     ["Turtle"] = true,
 }
 
