@@ -1,20 +1,14 @@
--- File: teleport.lua (Bypass Anti-Cheat / Fake Walk)
-local Modules = {}
-Modules.Teleport = {}
+--=========================================
+-- KYZEN PET FINDER V2
+-- Tween Movement
+--=========================================
 
-local Teleport = Modules.Teleport
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
-function Teleport.walkTo(targetPos, speed)
-    local char = Players.LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if not hum or not hrp then return false end
+local LP = Players.LocalPlayer
 
-    -- Bật NoClip để lướt xuyên cây cối, bờ rào không bị kẹt
-    local noclipConn = RunService.Stepped:Connect(function()
+local noclipConn = RunService.Stepped:Connect(function()
         if char then
             for _, v in pairs(char:GetChildren()) do
                 if v:IsA("BasePart") then v.CanCollide = false end
@@ -22,34 +16,95 @@ function Teleport.walkTo(targetPos, speed)
         end
     end)
 
-    -- Tính toán quãng đường và thời gian bay (Tốc độ 45 là chống giật lùi tốt nhất)
-    local safeSpeed = speed or 45
-    local dist = (hrp.Position - targetPos).Magnitude
-    local duration = dist / safeSpeed
+local Teleport = {}
 
-    local startCFrame = hrp.CFrame
-    local targetCFrame = CFrame.new(targetPos)
-    local startTime = os.clock()
+Teleport.Speed = 55
+Teleport.Height = 2.5
 
-    -- Bơm lệnh MoveTo để game tự động chạy Animation nhún nhảy đôi chân
-    hum:MoveTo(targetPos)
+local currentTween
 
-    -- Vòng lặp nhích CFrame liên tục (Bypass máy chủ)
-    while (os.clock() - startTime) < duration do
-        local alpha = (os.clock() - startTime) / duration
-        hrp.CFrame = startCFrame:Lerp(targetCFrame, alpha)
-        hrp.Velocity = Vector3.new(0, 0, 0) -- Đóng băng trọng lực để không bị rớt
-        task.wait()
+local function GetHRP()
+    local char = LP.Character
+    if not char then
+        return nil
     end
 
-    -- Dọn dẹp rác bộ nhớ
-    if noclipConn then noclipConn:Disconnect() end
+    return char:FindFirstChild("HumanoidRootPart")
+end
 
-    -- Ép sát vị trí cuối cùng
-    hrp.CFrame = targetCFrame
-    hrp.Velocity = Vector3.new(0, 0, 0)
-    
+function Teleport.Stop()
+
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+
+end
+
+function Teleport.walkTo(position,speed)
+
+    speed = speed or Teleport.Speed
+
+    local hrp = GetHRP()
+
+    if not hrp then
+        return false
+    end
+
+    Teleport.Stop()
+
+    local targetPos = Vector3.new(
+        position.X,
+        position.Y + Teleport.Height,
+        position.Z
+    )
+
+    local distance = (targetPos - hrp.Position).Magnitude
+
+    if distance <= 2 then
+        return true
+    end
+
+    local travelTime = distance / speed
+
+    currentTween = TweenService:Create(
+        hrp,
+        TweenInfo.new(
+            travelTime,
+            Enum.EasingStyle.Linear,
+            Enum.EasingDirection.Out
+        ),
+        {
+            CFrame = CFrame.new(targetPos)
+        }
+    )
+
+    currentTween:Play()
+
+    currentTween.Completed:Wait()
+
+    currentTween = nil
+
     return true
+
+end
+
+function Teleport.follow(model)
+
+    local root = model and model:FindFirstChild("RootPart")
+
+    if not root then
+        return
+    end
+
+    while model.Parent do
+
+        Teleport.walkTo(root.Position)
+
+        task.wait(0.05)
+
+    end
+
 end
 
 return Teleport
