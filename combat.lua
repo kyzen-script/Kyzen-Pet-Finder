@@ -1,3 +1,4 @@
+--[[
 -- File: PetFinder/combat.lua
 local Combat = {}
 local Players = game:GetService("Players")
@@ -59,3 +60,4 @@ function Combat.DefendPet()
 end
 
 return Combat
+]]
