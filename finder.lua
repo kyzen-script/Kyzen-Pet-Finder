@@ -75,6 +75,9 @@ local WantedPets = {
     ["Raccoon"] = true,
     ["Monkey"] = true,
     ["Butterfly"] = true,
+    ["Unicorn"] = true,
+    ["Dragonfly"] = true,
+    ["Bunny"] = true,
     ["Turtle"] = true,
 }
 
