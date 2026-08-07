@@ -27,7 +27,8 @@ function Buy.interact(petModel)
 
     pcall(fireproximityprompt, prompt)
 
-    task.wait(0.5)
+    -- Chờ server xử lý
+    task.wait(0.3)
 
     if not petModel.Parent or not prompt.Parent or not prompt.Enabled then
         Buy._stats.bought += 1
