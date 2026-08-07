@@ -167,7 +167,7 @@ function Finder.Start()
             -- HẾT PET TRONG DANH SÁCH -> TỰ ĐỘNG HOP (CÓ DELAY 5 GIÂY)
             if not hasPets and Finder._running then
                 -- Đếm ngược 5 giây, có check an toàn lỡ ông tắt tool giữa chừng
-                for i = 5, 1, -1 do
+                for i = 10, 1, -1 do
                     if not Finder._running then break end 
                     UI.UpdateStatus("🔄 Vét sạch map! Nhảy Server sau " .. i .. " giây...")
                     task.wait(1)
@@ -176,7 +176,7 @@ function Finder.Start()
                 -- Đếm xong thì bay
                 if Finder._running then
                     UI.UpdateStatus("🚀 Tiến hành bay sang Server mới!!!")
-                    task.wait(0.5)
+                    task.wait(1)
                     Hop.Execute()
                 end
                 break
